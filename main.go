@@ -18,29 +18,33 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	x := 1
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
 		tits, _ := s.Attr("href")
 
+		//filter trough subtitles, only cz.srt or cz.sub will pass
 		if strings.HasSuffix(tits, "cz.srt") || strings.HasSuffix(tits, "cz.sub") {
 			//fmt.Println(tits)
 
+			//download file with wget
 			path := "http://titulky.trekdnes.cz/" + tits
-			var cmd *exec.Cmd
-
-			if x <= 30 {
-				cmd = exec.Command("wget", path, "-P", "/home/vitek/Videos/Star Trek/Season 1")
-			} else if x >= 31 && x <= 56 {
-				cmd = exec.Command("wget", path, "-P", "/home/vitek/Videos/Star Trek/Season 2")
-			} else if x > 56 {
-				cmd = exec.Command("wget", path, "-P", "/home/vitek/Videos/Star Trek/Season 3")
-			}
-
+			cmd := exec.Command("wget", path, "-P", "/home/vitek/Videos/Star Trek/subtitles")
 			err := cmd.Run()
 			if err != nil {
-				fmt.Printf("An error has occured while downloading a subtitle %v:", x, err.Error())
+				fmt.Printf("An error has occured while downloading a subtitle %v: %v\n", x, err.Error())
 			} else {
-				fmt.Println(x, path)
+				fmt.Printf("%v.) %v -> ", x, path)
+			}
+
+			//using recode to recode file encoding from windows-1250 to UTF-8
+			fileName := strings.TrimPrefix(tits, "titulky/")
+			cmd = exec.Command("recode", "windows-1250..utf-8", "/home/vitek/Videos/Star Trek/subtitles/"+fileName)
+			err = cmd.Run()
+			if err != nil {
+				fmt.Printf("An error has occured while recoding a subtitle %v: %v\n", x, err.Error())
+			} else {
+				fmt.Printf("%v recoded into UTF-8\n", fileName)
 			}
 			x++
 		}
